@@ -23,20 +23,15 @@ public class TwoPartyTest {
 
     @Test
     public void testDHExchange() throws Exception {
-//        byte[] aliceKey = alice.getPublicKeyEnc(true);
-//        assertNotNull(aliceKey);
-
-//        byte[] bobKey = bob.getPublicKeyEnc(true);
-//        assertNotNull(bobKey);
-//
-//        alice.more();
+        //alice = initiator
+        //bob = responder
 
         //init alice
-        byte[] aliceKey = alice.getPublicKeyEnc(true);
+        byte[] aliceKey = alice.getPublicKeyEnc();
         assertNotNull(aliceKey);
 
         //send key to bob and init bob with alice key
-        byte[] bobKey = bob.getPublicKeyEnc(true, aliceKey);
+        byte[] bobKey = bob.getPublicKeyEnc(aliceKey);
         assertNotNull(bobKey);
 
         //phase 1
@@ -44,7 +39,7 @@ public class TwoPartyTest {
         bob.phase1(aliceKey);
 
         //set up shared secrets
-        alice.sharedSecret(bobKey);
+        alice.sharedSecret();
         bob.sharedSecret(aliceKey);
 
         String s2 = "how now, brown cow";
@@ -60,9 +55,8 @@ public class TwoPartyTest {
         byte[] crypto1 = bob.getCipherTextDesCbc(s1.getBytes());
         assertNotNull(crypto1);
 
-        byte[] decrypto1 = alice.decryptDesCbc(crypto1);
+        byte[] decrypto1 = alice.decryptDesCbc(crypto1, bob.encodedParams());
         assertNotNull(decrypto1);
         assertEquals(s1, new String(decrypto1));
     }
-
 }
