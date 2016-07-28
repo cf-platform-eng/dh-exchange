@@ -32,10 +32,10 @@ package io.pivotal.cf.dh;
  */
 
 import javax.crypto.Cipher;
-import javax.crypto.interfaces.DHPublicKey;
-import javax.crypto.spec.DHParameterSpec;
-import java.security.*;
-import java.security.spec.X509EncodedKeySpec;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * This program executes the Diffie-Hellman key agreement protocol
@@ -46,32 +46,6 @@ class Bob extends Party {
 
     Bob(KeyPairGenerator keyPairGenerator, KeyFactory keyFactory) throws InvalidKeyException, NoSuchAlgorithmException {
         super(keyPairGenerator, keyFactory);
-    }
-
-    byte[] getPublicKey(byte[] aliceKey) throws Exception {
-        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec
-                (aliceKey);
-        Key alicePubKey = getKeyFactory().generatePublic(x509KeySpec);
-
-        /*
-         * Bob gets the DH parameters associated with Alice's public key.
-         * He must use the same parameters when he generates his own key
-         * pair.
-         */
-        DHParameterSpec dhParamSpec = ((DHPublicKey) alicePubKey).getParams();
-
-        // Bob creates his own DH key pair
-        System.out.println("BOB: Generate DH keypair ...");
-        KeyPairGenerator bobKpairGen = KeyPairGenerator.getInstance("DH");
-        bobKpairGen.initialize(dhParamSpec);
-        setKeyPair(bobKpairGen.generateKeyPair());
-
-        // Bob creates and initializes his DH KeyAgreement object
-        System.out.println("BOB: Initialization ...");
-        getKeyAgree().init(getKeyPair().getPrivate());
-
-        // Bob encodes his public key, and sends it over to Alice.
-        return getKeyPair().getPublic().getEncoded();
     }
 
     byte[] getCipherTextDesEcb(byte[] bytes) throws Exception {

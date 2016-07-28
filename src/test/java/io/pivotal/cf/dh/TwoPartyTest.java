@@ -41,10 +41,7 @@ public class TwoPartyTest {
 
         //set up shared secrets
         alice.sharedSecret(bobKey);
-//        alice.sharedSecret();
-
         bob.sharedSecret(aliceKey);
-//        bob.sharedSecret(aliceKey);
 
         String s2 = "how now, brown cow";
         byte[] crypto2 = bob.getCipherTextDesEcb(s2.getBytes());
