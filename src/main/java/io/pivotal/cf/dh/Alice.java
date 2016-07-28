@@ -31,41 +31,18 @@ package io.pivotal.cf.dh;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.springframework.stereotype.Service;
-
 import javax.crypto.Cipher;
-import javax.crypto.KeyAgreement;
-import java.security.AlgorithmParameters;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 
 /**
  * This program executes the Diffie-Hellman key agreement protocol
  * between 2 parties: Alice and Bob.
  */
 
-@Service
 class Alice extends Party {
 
-    private void init() throws NoSuchAlgorithmException, InvalidKeyException {
-        System.out.println("ALICE: Generate DH keypair ...");
-        setKeyPair(getKeyPairGenerator().generateKeyPair());
-
-        // Alice creates and initializes her DH KeyAgreement object
-        System.out.println("ALICE: Initialization ...");
-        setKeyAgree(KeyAgreement.getInstance("DH"));
-        getKeyAgree().init(getKeyPair().getPrivate());
-    }
-
-    byte[] getPublicKeyEnc() throws Exception {
-        if (getKeyPair() == null) {
-            init();
-        }
-        return getKeyPair().getPublic().getEncoded();
-    }
-
-    void sharedSecret() throws Exception {
-        setDesKey(getKeyAgree().generateSecret("DES"));
+    Alice(KeyPairGenerator keyPairGenerator, KeyFactory keyFactory) throws InvalidKeyException, NoSuchAlgorithmException {
+        super(keyPairGenerator, keyFactory);
     }
 
     byte[] decryptDesEcb(byte[] bytes) throws Exception {

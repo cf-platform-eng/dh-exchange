@@ -7,6 +7,9 @@ import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
+import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
+
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
@@ -16,31 +19,32 @@ import static org.junit.Assert.assertEquals;
 public class TwoPartyTest {
 
     @Autowired
-    private Alice alice;
+    private KeyPairGenerator keyPairGenerator;
 
     @Autowired
-    private Bob bob;
+    private KeyFactory keyFactory;
 
     @Test
     public void testDHExchange() throws Exception {
         //alice = initiator
-        //bob = responder
+        Alice alice = new Alice(keyPairGenerator, keyFactory);
 
-        //init alice
-        byte[] aliceKey = alice.getPublicKeyEnc();
+        //bob = responder
+        Bob bob = new Bob(keyPairGenerator, keyFactory);
+
+        byte[] aliceKey = alice.getPublicKey();
         assertNotNull(aliceKey);
 
-        //send key to bob and init bob with alice key
-        byte[] bobKey = bob.getPublicKeyEnc(aliceKey);
+        //send key to bob
+        byte[] bobKey = bob.getPublicKey(aliceKey);
         assertNotNull(bobKey);
 
-        //phase 1
-        alice.phase1(bobKey);
-        bob.phase1(aliceKey);
-
         //set up shared secrets
-        alice.sharedSecret();
+        alice.sharedSecret(bobKey);
+//        alice.sharedSecret();
+
         bob.sharedSecret(aliceKey);
+//        bob.sharedSecret(aliceKey);
 
         String s2 = "how now, brown cow";
         byte[] crypto2 = bob.getCipherTextDesEcb(s2.getBytes());

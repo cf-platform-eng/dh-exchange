@@ -31,16 +31,10 @@ package io.pivotal.cf.dh;
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-import org.springframework.stereotype.Service;
-
 import javax.crypto.Cipher;
-import javax.crypto.KeyAgreement;
 import javax.crypto.interfaces.DHPublicKey;
 import javax.crypto.spec.DHParameterSpec;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.KeyPairGenerator;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 
 /**
@@ -48,10 +42,13 @@ import java.security.spec.X509EncodedKeySpec;
  * between 2 parties: Alice and Bob.
  */
 
-@Service
 class Bob extends Party {
 
-    byte[] getPublicKeyEnc(byte[] aliceKey) throws Exception {
+    Bob(KeyPairGenerator keyPairGenerator, KeyFactory keyFactory) throws InvalidKeyException, NoSuchAlgorithmException {
+        super(keyPairGenerator, keyFactory);
+    }
+
+    byte[] getPublicKey(byte[] aliceKey) throws Exception {
         X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec
                 (aliceKey);
         Key alicePubKey = getKeyFactory().generatePublic(x509KeySpec);
@@ -71,25 +68,10 @@ class Bob extends Party {
 
         // Bob creates and initializes his DH KeyAgreement object
         System.out.println("BOB: Initialization ...");
-        setKeyAgree(KeyAgreement.getInstance("DH"));
         getKeyAgree().init(getKeyPair().getPrivate());
 
         // Bob encodes his public key, and sends it over to Alice.
         return getKeyPair().getPublic().getEncoded();
-    }
-
-    void sharedSecret(byte[] aliceKey) throws Exception {
-        byte[] bobSharedSecret = getKeyAgree().generateSecret();
-        System.out.println("Bob secret: " +
-                getUtil().toHexString(bobSharedSecret));
-
-        System.out.println("Return shared secret as SecretKey object ...");
-
-        KeyFactory bobKeyFac = KeyFactory.getInstance("DH");
-        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(aliceKey);
-        PublicKey alicePubKey = bobKeyFac.generatePublic(x509KeySpec);
-        getKeyAgree().doPhase(alicePubKey, true);
-        setDesKey(getKeyAgree().generateSecret("DES"));
     }
 
     byte[] getCipherTextDesEcb(byte[] bytes) throws Exception {

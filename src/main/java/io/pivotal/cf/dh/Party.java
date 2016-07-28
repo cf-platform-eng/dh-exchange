@@ -1,26 +1,16 @@
 package io.pivotal.cf.dh;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.SecretKey;
-import java.security.KeyFactory;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PublicKey;
+import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 
 abstract class Party {
 
-    @Autowired
     private KeyPairGenerator keyPairGenerator;
 
-    @Autowired
     private KeyFactory keyFactory;
-
-    @Autowired
-    private Util util;
 
     private KeyAgreement keyAgree;
 
@@ -30,23 +20,25 @@ abstract class Party {
 
     private Cipher cbcCipher;
 
-    KeyPairGenerator getKeyPairGenerator() {
-        return keyPairGenerator;
+    public Party(KeyPairGenerator keyPairGenerator, KeyFactory keyFactory) throws InvalidKeyException, NoSuchAlgorithmException {
+        super();
+        this.keyPairGenerator = keyPairGenerator;
+        this.keyFactory = keyFactory;
+        init();
     }
 
     KeyFactory getKeyFactory() {
         return keyFactory;
     }
 
-    Util getUtil() {
-        return util;
-    }
-
-    KeyAgreement getKeyAgree() {
+    KeyAgreement getKeyAgree() throws NoSuchAlgorithmException {
+        if(keyAgree == null) {
+            setKeyAgree(KeyAgreement.getInstance("DH"));
+        }
         return keyAgree;
     }
 
-    void setKeyAgree(KeyAgreement keyAgree) {
+    private void setKeyAgree(KeyAgreement keyAgree) {
         this.keyAgree = keyAgree;
     }
 
@@ -82,10 +74,24 @@ abstract class Party {
         return cbcCipher().getParameters().getEncoded();
     }
 
-    void phase1(byte[] counterPartyKey) throws Exception {
+    void sharedSecret(byte[] counterPartyKey) throws Exception {
         X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(counterPartyKey);
         PublicKey pubKey = getKeyFactory().generatePublic(x509KeySpec);
         System.out.println("Execute PHASE1 ...");
         getKeyAgree().doPhase(pubKey, true);
+        setDesKey(getKeyAgree().generateSecret("DES"));
+    }
+
+    private void init() throws NoSuchAlgorithmException, InvalidKeyException {
+        System.out.println("Generate DH keypair ...");
+        setKeyPair(keyPairGenerator.generateKeyPair());
+
+        // Alice creates and initializes her DH KeyAgreement object
+        System.out.println("Initialization ...");
+        getKeyAgree().init(getKeyPair().getPrivate());
+    }
+
+    byte[] getPublicKey() throws Exception {
+        return getKeyPair().getPublic().getEncoded();
     }
 }
