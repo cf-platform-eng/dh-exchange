@@ -88,6 +88,10 @@ class Party {
 
         LOG.info("Generate shared secret.");
         setDesKey(getKeyAgree().generateSecret("DES"));
+
+        //null out keypairs ("ephemeral keys")
+        setKeyAgree(null);
+        setKeyPair(null);
     }
 
     private void init() throws NoSuchAlgorithmException, InvalidKeyException {

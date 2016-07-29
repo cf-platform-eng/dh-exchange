@@ -18,7 +18,7 @@ public class UtilTest {
     private Util util;
 
     @Autowired
-    private Party alice;
+    private Party tester;
 
     @Test
     public void testCodec() throws Exception {
@@ -31,7 +31,7 @@ public class UtilTest {
 
     @Test
     public void testKeyCodec() throws Exception {
-        byte[] key = alice.getPublicKey();
+        byte[] key = tester.getPublicKey();
         String s = util.fromBytes(key);
         assertNotNull(s);
         byte[] key2 = util.toBytes(s);
