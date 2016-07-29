@@ -1,142 +1,99 @@
 package io.pivotal.cf.dh;
 
-import org.apache.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
-import javax.crypto.SecretKey;
-import javax.crypto.interfaces.DHPublicKey;
-import javax.crypto.spec.DHParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.ByteBuffer;
 import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 class Party {
 
-    private static final Logger LOG = Logger.getLogger(Party.class);
-
+    @Autowired
     private KeyPairGenerator keyPairGenerator;
 
+    @Autowired
     private KeyFactory keyFactory;
 
-    private KeyAgreement keyAgree;
+    @Autowired
+    private Util util;
 
-    private SecretKey desKey;
+    private byte[] secret;
 
-    private KeyPair keyPair;
+    private byte[] derivedKey;
 
-    private Cipher cbcCipher;
+    private PublicKey pubKey;
 
-    Party(KeyPairGenerator keyPairGenerator, KeyFactory keyFactory) throws InvalidKeyException, NoSuchAlgorithmException {
-        super();
-        this.keyPairGenerator = keyPairGenerator;
-        this.keyFactory = keyFactory;
-        init();
+    private PrivateKey privKey;
+
+    void sharedSecret(byte[] counterPartyPublicKey) throws GeneralSecurityException {
+        X509EncodedKeySpec pkSpec = new X509EncodedKeySpec(counterPartyPublicKey);
+        PublicKey otherPublicKey = keyFactory.generatePublic(pkSpec);
+
+        // Perform key agreement
+        KeyAgreement ka = KeyAgreement.getInstance(Config.ELLIPTIC_KEY_AGREEMENT_TYPE);
+        ka.init(getPrivKey());
+        ka.doPhase(otherPublicKey, true);
+
+        // Read shared secret
+        secret = ka.generateSecret();
+
+        MessageDigest hash = MessageDigest.getInstance(Config.DIGEST_TYPE);
+        hash.update(secret);
+
+        // Simple deterministic ordering
+        List<ByteBuffer> keys = Arrays.asList(ByteBuffer.wrap(getPubKey().getEncoded()), ByteBuffer.wrap(counterPartyPublicKey));
+        Collections.sort(keys);
+        hash.update(keys.get(0));
+        hash.update(keys.get(1));
+
+        derivedKey = hash.digest();
+        privKey = null;
+        pubKey = null;
     }
 
-    private KeyFactory getKeyFactory() {
-        return keyFactory;
+    private void init() {
+        KeyPair kp = keyPairGenerator.generateKeyPair();
+        pubKey = kp.getPublic();
+        privKey = kp.getPrivate();
     }
 
-    private KeyAgreement getKeyAgree() throws NoSuchAlgorithmException {
-        if (keyAgree == null) {
-            setKeyAgree(KeyAgreement.getInstance("DH"));
+    byte[] getPublicKey() {
+        return getPubKey().getEncoded();
+    }
+
+    private PrivateKey getPrivKey() {
+        if (privKey == null && secret == null) {
+            init();
         }
-        return keyAgree;
+        return privKey;
     }
 
-    private void setKeyAgree(KeyAgreement keyAgree) {
-        this.keyAgree = keyAgree;
-    }
-
-    private SecretKey getDesKey() {
-        return desKey;
-    }
-
-    private void setDesKey(SecretKey desKey) {
-        this.desKey = desKey;
-    }
-
-    private KeyPair getKeyPair() {
-        return keyPair;
-    }
-
-    private void setKeyPair(KeyPair keyPair) {
-        this.keyPair = keyPair;
-    }
-
-    byte[] getCipherTextDesCbc(byte[] bytes) throws Exception {
-        return cbcCipher().doFinal(bytes);
-    }
-
-    private Cipher cbcCipher() throws Exception {
-        if (cbcCipher == null) {
-            cbcCipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
-            cbcCipher.init(Cipher.ENCRYPT_MODE, getDesKey());
+    private PublicKey getPubKey() {
+        if (pubKey == null && secret == null) {
+            init();
         }
-        return cbcCipher;
+        return pubKey;
     }
 
-    byte[] encodedParams() throws Exception {
-        return cbcCipher().getParameters().getEncoded();
+    String encrypt(String message) throws GeneralSecurityException {
+        Cipher c = Cipher.getInstance(Config.CIPHER_TYPE);
+        c.init(Cipher.ENCRYPT_MODE, getCipherKey());
+        return util.fromBytes(c.doFinal(message.getBytes()));
     }
 
-    void sharedSecret(byte[] counterPartyKey) throws Exception {
-        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec(counterPartyKey);
-        PublicKey pubKey = getKeyFactory().generatePublic(x509KeySpec);
-        LOG.info("Execute PHASE1.");
-        getKeyAgree().doPhase(pubKey, true);
-
-        LOG.info("Generate shared secret.");
-        setDesKey(getKeyAgree().generateSecret("DES"));
-
-        //null out keypairs ("ephemeral keys")
-        setKeyAgree(null);
-        setKeyPair(null);
+    String decrypt(String encryptedData) throws GeneralSecurityException {
+        Cipher c = Cipher.getInstance(Config.CIPHER_TYPE);
+        c.init(Cipher.DECRYPT_MODE, getCipherKey());
+        return new String(c.doFinal(util.toBytes(encryptedData)));
     }
 
-    private void init() throws NoSuchAlgorithmException, InvalidKeyException {
-        LOG.info("Generate DH keypair.");
-        setKeyPair(keyPairGenerator.generateKeyPair());
-        LOG.info("Initialize DH keypair.");
-        getKeyAgree().init(getKeyPair().getPrivate());
-    }
-
-    byte[] getPublicKey() throws Exception {
-        return getKeyPair().getPublic().getEncoded();
-    }
-
-    byte[] getPublicKey(byte[] counterPartyKey) throws Exception {
-        X509EncodedKeySpec x509KeySpec = new X509EncodedKeySpec
-                (counterPartyKey);
-        Key counterPartyPubKey = getKeyFactory().generatePublic(x509KeySpec);
-        DHParameterSpec dhParamSpec = ((DHPublicKey) counterPartyPubKey).getParams();
-        LOG.info("Generate DH keypair ...");
-        keyPairGenerator.initialize(dhParamSpec);
-        setKeyPair(keyPairGenerator.generateKeyPair());
-
-        LOG.info("Initialize DH keypair.");
-        getKeyAgree().init(getKeyPair().getPrivate());
-
-        return getKeyPair().getPublic().getEncoded();
-    }
-
-    byte[] decryptDesEcb(byte[] bytes) throws Exception {
-        Cipher aliceCipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
-        aliceCipher.init(Cipher.DECRYPT_MODE, getDesKey());
-        return aliceCipher.doFinal(bytes);
-    }
-
-    byte[] decryptDesCbc(byte[] bytes, byte[] params) throws Exception {
-        AlgorithmParameters ap = AlgorithmParameters.getInstance("DES");
-        ap.init(params);
-        Cipher aliceCipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
-        aliceCipher.init(Cipher.DECRYPT_MODE, getDesKey(), ap);
-        return aliceCipher.doFinal(bytes);
-    }
-
-    byte[] getCipherTextDesEcb(byte[] bytes) throws Exception {
-        Cipher bobCipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
-        bobCipher.init(Cipher.ENCRYPT_MODE, getDesKey());
-        return bobCipher.doFinal(bytes);
+    private Key getCipherKey() {
+        return new SecretKeySpec(derivedKey, Config.CIPHER_TYPE);
     }
 }

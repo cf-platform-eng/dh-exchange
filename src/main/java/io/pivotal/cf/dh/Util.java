@@ -21,7 +21,7 @@ class Util {
         return new String(Base64.encodeBase64(bytes));
     }
 
-    byte[] toBytes(String s) throws Exception {
+    byte[] toBytes(String s) {
         return Base64.decodeBase64(s);
     }
 }

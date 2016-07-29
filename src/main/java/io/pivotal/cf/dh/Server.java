@@ -1,11 +1,13 @@
 package io.pivotal.cf.dh;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 class Server {
@@ -16,33 +18,22 @@ class Server {
     @Autowired
     private Util util;
 
-    private HttpHeaders httpHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        return headers;
-    }
+    @Autowired
+    private HttpHeaders httpHeaders;
 
-    @RequestMapping(value = "/server/pubKey", method = RequestMethod.POST)
-    public ResponseEntity<String> pubKey(@RequestBody String pubKey) throws Exception {
-        return new ResponseEntity<>(util.fromBytes(bob.getPublicKey(util.toBytes(pubKey))), httpHeaders(), HttpStatus.CREATED);
+    @RequestMapping(value = "/server/pubKey", method = RequestMethod.GET)
+    public ResponseEntity<String> pubKey() throws Exception {
+        return new ResponseEntity<>(util.fromBytes(bob.getPublicKey()), httpHeaders, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/server/secret", method = RequestMethod.POST)
     public ResponseEntity<String> secret(@RequestBody String pubKey) throws Exception {
         bob.sharedSecret(util.toBytes(pubKey));
-        return new ResponseEntity<>(httpHeaders(), HttpStatus.CREATED);
+        return new ResponseEntity<>(httpHeaders, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/server/encryptDesEcb", method = RequestMethod.POST)
-    public ResponseEntity<String> encryptDesEcb(@RequestBody String message) throws Exception {
-        return new ResponseEntity<>(util.fromBytes(bob.getCipherTextDesEcb(util.toUtf8Bytes(message))), httpHeaders(), HttpStatus.OK);
-    }
-
-    @RequestMapping(value = "/server/encryptDesCbc", method = RequestMethod.POST)
-    public ResponseEntity<Map<String, String>> encryptDesCbc(@RequestBody String message) throws Exception {
-        Map<String, String> m = new HashMap<>();
-        m.put("message", util.fromBytes(bob.getCipherTextDesCbc(util.toUtf8Bytes(message))));
-        m.put("parameters", util.fromBytes(bob.encodedParams()));
-        return new ResponseEntity<>(m, httpHeaders(), HttpStatus.OK);
+    @RequestMapping(value = "/server/encrypt", method = RequestMethod.POST)
+    public ResponseEntity<String> encrypt(@RequestBody String message) throws Exception {
+        return new ResponseEntity<>(bob.encrypt(message), httpHeaders, HttpStatus.OK);
     }
 }

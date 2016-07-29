@@ -2,41 +2,46 @@ package io.pivotal.cf.dh;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
-import javax.crypto.spec.DHParameterSpec;
 import java.security.*;
-import java.security.spec.InvalidParameterSpecException;
 
 @Configuration
-public class Config {
+class Config {
+
+    static final String ELLIPTIC_KEY_TYPE = "EC";
+//    static final String DH_KEY_TYPE = "DH";
+    static final String ELLIPTIC_KEY_AGREEMENT_TYPE = "ECDH";
+    static final String DIGEST_TYPE = "SHA-256";
+    static final String CIPHER_TYPE = "AES";
 
     @Bean
-    public KeyPairGenerator keyPairGenerator(DHParameterSpec dhSkipParamSpec) throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance("DH");
-        kpg.initialize(dhSkipParamSpec);
+    public KeyPairGenerator keyPairGenerator() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(ELLIPTIC_KEY_TYPE);
+        kpg.initialize(256);
         return kpg;
     }
 
     @Bean
     public KeyFactory keyFactory() throws NoSuchAlgorithmException {
-        return KeyFactory.getInstance("DH");
+        return KeyFactory.getInstance(ELLIPTIC_KEY_TYPE);
     }
 
     @Bean
-    DHParameterSpec dhSkipParamSpec() throws NoSuchAlgorithmException, InvalidParameterSpecException {
-        AlgorithmParameterGenerator paramGen = AlgorithmParameterGenerator.getInstance("DH");
-        paramGen.init(512);
-        AlgorithmParameters params = paramGen.generateParameters();
-        return params.getParameterSpec(DHParameterSpec.class);
+    Party alice() throws NoSuchAlgorithmException, InvalidKeyException {
+        return new Party();
     }
 
     @Bean
-    Party alice(KeyPairGenerator keyPairGenerator, KeyFactory keyFactory) throws NoSuchAlgorithmException, InvalidKeyException {
-        return new Party(keyPairGenerator, keyFactory);
+    Party bob() throws NoSuchAlgorithmException, InvalidKeyException {
+        return new Party();
     }
 
     @Bean
-    Party bob(KeyPairGenerator keyPairGenerator, KeyFactory keyFactory) throws NoSuchAlgorithmException, InvalidKeyException {
-        return new Party(keyPairGenerator, keyFactory);
+    HttpHeaders httpHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return headers;
     }
 }

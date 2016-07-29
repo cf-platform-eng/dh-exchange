@@ -1,5 +1,7 @@
 package io.pivotal.cf.dh;
 
+import junit.framework.TestCase;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +11,7 @@ import org.springframework.test.context.web.WebAppConfiguration;
 
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
+import java.security.PublicKey;
 
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
@@ -32,8 +35,7 @@ public class TwoPartyTest {
         byte[] aliceKey = alice.getPublicKey();
         assertNotNull(aliceKey);
 
-        //send key to bob
-        byte[] bobKey = bob.getPublicKey(aliceKey);
+        byte[]  bobKey = bob.getPublicKey();
         assertNotNull(bobKey);
 
         //set up shared secrets
@@ -41,20 +43,11 @@ public class TwoPartyTest {
         bob.sharedSecret(aliceKey);
 
         String s2 = "how now, brown cow";
-        byte[] crypto2 = bob.getCipherTextDesEcb(s2.getBytes());
+        String crypto2 = bob.encrypt(s2);
         assertNotNull(crypto2);
 
-        byte[] decrypto2 = alice.decryptDesEcb(crypto2);
+        String decrypto2 = alice.decrypt(crypto2);
         assertNotNull(decrypto2);
-        assertEquals(s2, new String(decrypto2));
-
-        //start encrypt/decrypt tests
-        String s1 = "testing 1, 2, 3...";
-        byte[] crypto1 = bob.getCipherTextDesCbc(s1.getBytes());
-        assertNotNull(crypto1);
-
-        byte[] decrypto1 = alice.decryptDesCbc(crypto1, bob.encodedParams());
-        assertNotNull(decrypto1);
-        assertEquals(s1, new String(decrypto1));
+        assertEquals(s2, decrypto2);
     }
 }
