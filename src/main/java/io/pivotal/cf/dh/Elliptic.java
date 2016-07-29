@@ -15,7 +15,7 @@ import static javax.xml.bind.DatatypeConverter.printHexBinary;
  */
 public class Elliptic {
 
-    public static void main(String[] args) throws Exception {
+    public static void go() throws Exception {
         // Generate ephemeral ECDH keypair
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
         kpg.initialize(256);

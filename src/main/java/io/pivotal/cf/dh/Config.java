@@ -11,7 +11,7 @@ import java.security.spec.InvalidParameterSpecException;
 public class Config {
 
     @Bean
-    public KeyPairGenerator KeyPairGenerator(DHParameterSpec dhSkipParamSpec) throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+    public KeyPairGenerator keyPairGenerator(DHParameterSpec dhSkipParamSpec) throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance("DH");
         kpg.initialize(dhSkipParamSpec);
         return kpg;
@@ -28,5 +28,15 @@ public class Config {
         paramGen.init(512);
         AlgorithmParameters params = paramGen.generateParameters();
         return params.getParameterSpec(DHParameterSpec.class);
+    }
+
+    @Bean
+    Party alice(KeyPairGenerator keyPairGenerator, KeyFactory keyFactory) throws NoSuchAlgorithmException, InvalidKeyException {
+        return new Party(keyPairGenerator, keyFactory);
+    }
+
+    @Bean
+    Party bob(KeyPairGenerator keyPairGenerator, KeyFactory keyFactory) throws NoSuchAlgorithmException, InvalidKeyException {
+        return new Party(keyPairGenerator, keyFactory);
     }
 }

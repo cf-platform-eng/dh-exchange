@@ -10,7 +10,7 @@ import javax.crypto.spec.DHParameterSpec;
 import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 
-abstract class Party {
+class Party {
 
     private static final Logger LOG = Logger.getLogger(Party.class);
 
@@ -48,7 +48,7 @@ abstract class Party {
         this.keyAgree = keyAgree;
     }
 
-    SecretKey getDesKey() {
+    private SecretKey getDesKey() {
         return desKey;
     }
 
@@ -114,5 +114,25 @@ abstract class Party {
         getKeyAgree().init(getKeyPair().getPrivate());
 
         return getKeyPair().getPublic().getEncoded();
+    }
+
+    byte[] decryptDesEcb(byte[] bytes) throws Exception {
+        Cipher aliceCipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
+        aliceCipher.init(Cipher.DECRYPT_MODE, getDesKey());
+        return aliceCipher.doFinal(bytes);
+    }
+
+    byte[] decryptDesCbc(byte[] bytes, byte[] params) throws Exception {
+        AlgorithmParameters ap = AlgorithmParameters.getInstance("DES");
+        ap.init(params);
+        Cipher aliceCipher = Cipher.getInstance("DES/CBC/PKCS5Padding");
+        aliceCipher.init(Cipher.DECRYPT_MODE, getDesKey(), ap);
+        return aliceCipher.doFinal(bytes);
+    }
+
+    byte[] getCipherTextDesEcb(byte[] bytes) throws Exception {
+        Cipher bobCipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
+        bobCipher.init(Cipher.ENCRYPT_MODE, getDesKey());
+        return bobCipher.doFinal(bytes);
     }
 }

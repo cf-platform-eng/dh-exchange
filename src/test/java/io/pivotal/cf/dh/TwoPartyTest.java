@@ -19,18 +19,15 @@ import static org.junit.Assert.assertEquals;
 public class TwoPartyTest {
 
     @Autowired
-    private KeyPairGenerator keyPairGenerator;
+    private Party alice;
 
     @Autowired
-    private KeyFactory keyFactory;
+    private Party bob;
 
     @Test
     public void testDHExchange() throws Exception {
-        //alice = initiator
-        Alice alice = new Alice(keyPairGenerator, keyFactory);
-
-        //bob = responder
-        Bob bob = new Bob(keyPairGenerator, keyFactory);
+        //alice = client
+        //bob = server
 
         byte[] aliceKey = alice.getPublicKey();
         assertNotNull(aliceKey);
