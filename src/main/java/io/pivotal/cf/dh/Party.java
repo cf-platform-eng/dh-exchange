@@ -1,9 +1,11 @@
 package io.pivotal.cf.dh;
 
+import org.apache.commons.codec.binary.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
+import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
 import java.security.*;
@@ -23,6 +25,8 @@ class Party {
     @Autowired
     private Util util;
 
+    private String name;
+
     private byte[] secret;
 
     private byte[] derivedKey;
@@ -30,6 +34,15 @@ class Party {
     private PublicKey pubKey;
 
     private PrivateKey privKey;
+
+    Party(String name) {
+        super();
+        this.name = name;
+    }
+
+    String getName() {
+        return this.name;
+    }
 
     void sharedSecret(byte[] counterPartyPublicKey) throws GeneralSecurityException {
         X509EncodedKeySpec pkSpec = new X509EncodedKeySpec(counterPartyPublicKey);
@@ -95,5 +108,20 @@ class Party {
 
     private Key getCipherKey() {
         return new SecretKeySpec(derivedKey, Config.CIPHER_TYPE);
+    }
+
+    String hmac(String s) throws GeneralSecurityException {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        SecretKeySpec secret =
+                new SecretKeySpec(derivedKey, Config.DIGEST_TYPE);
+
+        mac.init(secret);
+        byte[] digest = mac.doFinal(s.getBytes());
+
+        return Hex.encodeHexString(digest);
+    }
+
+    boolean hasSecrets() {
+        return derivedKey != null;
     }
 }

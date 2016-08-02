@@ -74,5 +74,18 @@ public class MvcTest {
         String s2 = result.getResponse().getContentAsString();
         assertNotNull(s2);
         assertEquals(testmessage, s2);
+
+
+        result = mockMvc.perform(get("/server/quote/GOOG"))
+                .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
+
+        String quote = result.getResponse().getContentAsString();
+        assertNotNull(quote);
+
+//        result = mockMvc.perform(get("/client/quote/GOOG"))
+//                .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
+//
+//        quote = result.getResponse().getContentAsString();
+//        assertNotNull(quote);
     }
 }
