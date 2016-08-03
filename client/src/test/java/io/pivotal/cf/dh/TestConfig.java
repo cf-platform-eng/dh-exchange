@@ -13,4 +13,9 @@ public class TestConfig {
     Party tester() throws NoSuchAlgorithmException, InvalidKeyException {
         return new Party("tester");
     }
+
+    @Bean
+    Party bob() throws NoSuchAlgorithmException, InvalidKeyException {
+        return new Party("tester");
+    }
 }

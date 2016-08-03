@@ -41,7 +41,7 @@ public class MvcTest {
     @Test
     public void testDHexchange() throws Exception {
         MvcResult result = mockMvc.perform(get("/client/pubKey"))
-                .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON)).andReturn();
+                .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_JSON_UTF8)).andReturn();
 
         String clientKey = result.getResponse().getContentAsString();
         assertNotNull(clientKey);

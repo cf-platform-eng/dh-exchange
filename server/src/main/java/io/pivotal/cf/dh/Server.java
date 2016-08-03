@@ -1,103 +1,101 @@
 package io.pivotal.cf.dh;
 
-import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.LogManager;
-
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.security.GeneralSecurityException;
-import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 class Server {
 
     private static final Logger LOG = LogManager.getLogger(Server.class);
 
-    @Autowired
-    private Party bob;
+    private final Map<String, Party> secrets = new HashMap<>();
 
     @Autowired
     private Util util;
 
     @Autowired
-    private ClientRepository clientRepository;
-
-    @Autowired
     private QuoteRepository quoteRepository;
 
     @Autowired
-    private HttpHeaders httpHeaders;
+    private AutowireCapableBeanFactory beanFactory;
 
     @RequestMapping(value = "/server/pubKey", method = RequestMethod.GET)
-    public ResponseEntity<String> pubKey(HttpRequest request) throws Exception {
-        if(bob.hasSecrets()) {
-            throw new Exception("keys already exchanged.");
+    public ResponseEntity<Map<String, String>> pubKey(@RequestParam(value = "name") String name, @RequestParam(value = "pubKey") String pubKey) throws GeneralSecurityException {
+
+        if (secrets.containsKey(name)) {
+            throw new GeneralSecurityException("keys already exchanged with " + name);
         }
 
-        //get requester from request, ask for their key
-        //TODO hard coded
-        //String uri = ...
-        //String name = ...
-        //store somewhere...
-        String key = clientRepository.getKey();
+        Party p = createParty(name);
+        String pPubKey = util.fromBytes(p.getPublicKey());
+        p.sharedSecret(util.toBytes(pubKey));
+        secrets.put(name, p);
 
-        //create secret for them
-        bob.sharedSecret(util.toBytes(key));
+        Map<String, String> m = new HashMap<>();
+        m.put("server", pPubKey);
 
-        //return my key
-        return new ResponseEntity<>(util.fromBytes(bob.getPublicKey()), httpHeaders, HttpStatus.OK);
+        return new ResponseEntity<>(m, HttpStatus.CREATED);
     }
 
-    @RequestMapping(value = "/server/secret", method = RequestMethod.POST)
-    public ResponseEntity<String> secret(@RequestBody String pubKey) throws Exception {
-        bob.sharedSecret(util.toBytes(pubKey));
-        return new ResponseEntity<>(httpHeaders, HttpStatus.CREATED);
-    }
+//    @RequestMapping(value = "/server/encrypt", method = RequestMethod.POST)
+//    public ResponseEntity<String> encrypt(@RequestBody String message) throws Exception {
+//        return new ResponseEntity<>(bob.encrypt(message), HttpStatus.OK);
+//    }
 
-    @RequestMapping(value = "/server/encrypt", method = RequestMethod.POST)
-    public ResponseEntity<String> encrypt(@RequestBody String message) throws Exception {
-        return new ResponseEntity<>(bob.encrypt(message), httpHeaders, HttpStatus.OK);
-    }
-
-    @CrossOrigin(origins = "http://localhost:8080")
     @RequestMapping(value = "/server/quote/{symbol}", method = RequestMethod.GET)
-    public ResponseEntity<String> quote(@PathVariable String symbol, @RequestHeader HttpHeaders headers) throws Exception {
+    public ResponseEntity<String> quote(@PathVariable String symbol, HttpServletRequest request) throws Exception {
+
         //validate the request
-        validate(headers, null);
+        validate(request, null);
 
         return new ResponseEntity<>(quoteRepository.getQuote("select * from yahoo.finance.quotes where symbol = '"
-                + symbol + "'"), httpHeaders(headers), HttpStatus.OK);
+                + symbol + "'"), HttpStatus.OK);
     }
 
-    HttpHeaders httpHeaders(HttpHeaders headers) {
-        HttpHeaders h = new HttpHeaders();
-        h.setContentType(MediaType.APPLICATION_JSON);
-        headers.keySet();
-//
-//        List<String> l = new ArrayList<>();
-//        l.add( "alice: fhfhfhfhhfh");
-//        headers.put(HttpHeaders.AUTHORIZATION,l);
-        return h;
+    private Party createParty(String name) {
+        Party p = new Party(name);
+        beanFactory.autowireBean(p);
+        return p;
     }
 
-    private void validate(HttpHeaders headers, String content) throws GeneralSecurityException {
-        String hmac = headers.get("Authorization").get(0);
+    private void validate(HttpServletRequest request, String content) throws GeneralSecurityException {
+        String auth = request.getHeader("Authorization");
 
-//        if(hmac == null) {
-//            throw new GeneralSecurityException("Authorization token missing from request.");
-//        }
+        if (auth == null) {
+            throw new GeneralSecurityException("Authorization token missing from request.");
+        }
 
-        String date = new Date(headers.getDate()).toString();
-        String method = headers.get("Method").get(0);
-        String uri = headers.getLocation().toString();
-        String s = toSign(date, method, uri, content);
+        String[] s = auth.split(":");
+        Party p = secrets.get(s[0]);
 
-        //TODO, look secret up
-        String computedHmac = bob.hmac(s);
+        if (p == null) {
+            throw new GeneralSecurityException("Party not found for name: " + s[0]);
+        }
 
-        if( ! hmac.equals(computedHmac)) {
+        String date = request.getHeader("date");
+        String method = request.getMethod();
+        String uri = request.getRequestURI();
+
+        String c;
+        if (content != null) {
+            c = toSign(date, method, uri, content);
+        } else {
+            c = toSign(date, method, uri, "");
+        }
+
+        String computedHmac = p.hmac(c);
+
+        if (!s[1].equals(computedHmac)) {
             throw new GeneralSecurityException("Invalid hmac token.");
         }
     }

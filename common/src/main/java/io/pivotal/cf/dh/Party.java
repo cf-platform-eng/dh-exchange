@@ -76,7 +76,11 @@ class Party {
         privKey = kp.getPrivate();
     }
 
-    byte[] getPublicKey() {
+    byte[] getPublicKey() throws GeneralSecurityException {
+        if (hasSecrets()) {
+            throw new GeneralSecurityException("keys already exchanged.");
+        }
+
         return getPubKey().getEncoded();
     }
 

@@ -1,10 +1,9 @@
 package io.pivotal.cf.dh;
 
 import feign.Feign;
+import feign.gson.GsonDecoder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 
 import java.security.*;
 
@@ -29,23 +28,11 @@ class Config {
     }
 
     @Bean
-    Party bob() throws NoSuchAlgorithmException, InvalidKeyException {
-        return new Party("bob");
-    }
-
-    @Bean
-    HttpHeaders httpHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        return headers;
-    }
-
-    //TODO fix uris
-    @Bean
     public ServerRepository serverRepository() {
         return Feign
                 .builder()
+                .decoder(new GsonDecoder())
                 .target(ServerRepository.class,
-                        "http://localhost:8080/server");
+                        "http://localhost:9090/server");
     }
 }
