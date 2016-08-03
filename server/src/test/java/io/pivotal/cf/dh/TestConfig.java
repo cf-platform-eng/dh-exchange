@@ -10,7 +10,7 @@ import java.security.NoSuchAlgorithmException;
 public class TestConfig {
 
     @Bean
-    Party tester() throws NoSuchAlgorithmException, InvalidKeyException {
-        return new Party("tester");
+    Party alice() throws NoSuchAlgorithmException, InvalidKeyException {
+        return new Party("alice");
     }
 }

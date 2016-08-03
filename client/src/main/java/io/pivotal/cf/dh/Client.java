@@ -1,7 +1,5 @@
 package io.pivotal.cf.dh;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,8 +17,6 @@ import java.util.Map;
 
 @RestController
 class Client {
-
-    private static final Logger LOG = LogManager.getLogger(Client.class);
 
     @Autowired
     private Party alice;
@@ -51,42 +47,31 @@ class Client {
 //    }
 
     @RequestMapping(value = "/client/quote/{symbol}", method = RequestMethod.GET)
-    public ResponseEntity<String> quote(@PathVariable String symbol, HttpServletRequest request) throws Exception {
+    public ResponseEntity<Map<String, Object>> quote(@PathVariable String symbol, HttpServletRequest request) throws Exception {
         if (!alice.hasSecrets()) {
             throw new Exception("key exchange required before making this call.");
         }
 
-        Map<String, Object> m = headerMap(request, null);
+        Map<String, Object> m = headerMap(request, "/server/quote/" + symbol, null);
         return new ResponseEntity<>(serverRepository.getQuote(symbol, m), HttpStatus.OK);
     }
 
-    private Map<String, Object> headerMap(HttpServletRequest request, String content) throws Exception {
+    private Map<String, Object> headerMap(HttpServletRequest request, String uri, String content) throws Exception {
         Map<String, Object> m = new HashMap<>();
-        m.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+        m.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8);
 
         String date = util.currentHttpTime();
         m.put(HttpHeaders.DATE, date);
 
         String method = request.getMethod();
-        String uri = request.getRequestURI();
-        String toSign = toSign(date, method, uri, content);
+
+        //this returns the uri for the request we were sent, not where we are going to....
+        //String uri = request.getRequestURI();
+        //TODO figure out how to put the uri that the request is going to instead
+
+        String toSign = util.signThis(date, method, uri, content);
 
         m.put(HttpHeaders.AUTHORIZATION, alice.getName() + ":" + alice.hmac(toSign));
         return m;
-    }
-
-    private String toSign(String date, String method, String uri, String content) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(date).append("\n")
-                .append(method).append("\n")
-                .append(uri);
-
-        if (content != null) {
-            sb.append("\n").append(content);
-        }
-
-        String ret = sb.toString();
-        LOG.info("client signing: " + ret);
-        return ret;
     }
 }

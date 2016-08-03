@@ -1,6 +1,7 @@
 package io.pivotal.cf.dh;
 
 import feign.Feign;
+import feign.gson.GsonDecoder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,14 +23,10 @@ class Config {
     }
 
     @Bean
-    Party bob() throws NoSuchAlgorithmException, InvalidKeyException {
-        return new Party("bob");
-    }
-
-    @Bean
     public QuoteRepository quoteRepository() {
         return Feign
                 .builder()
+                .decoder(new GsonDecoder())
                 .target(QuoteRepository.class,
                         "https://query.yahooapis.com/v1/public");
     }

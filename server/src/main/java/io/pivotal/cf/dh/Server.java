@@ -53,7 +53,7 @@ class Server {
 //    }
 
     @RequestMapping(value = "/server/quote/{symbol}", method = RequestMethod.GET)
-    public ResponseEntity<String> quote(@PathVariable String symbol, HttpServletRequest request) throws Exception {
+    public ResponseEntity<Map<String, Object>> quote(@PathVariable String symbol, HttpServletRequest request) throws Exception {
 
         //validate the request
         validate(request, null);
@@ -86,31 +86,11 @@ class Server {
         String method = request.getMethod();
         String uri = request.getRequestURI();
 
-        String c;
-        if (content != null) {
-            c = toSign(date, method, uri, content);
-        } else {
-            c = toSign(date, method, uri, "");
-        }
-
-        String computedHmac = p.hmac(c);
+        String signThis = util.signThis(date, method, uri, content);
+        String computedHmac = p.hmac(signThis);
 
         if (!s[1].equals(computedHmac)) {
             throw new GeneralSecurityException("Invalid hmac token.");
         }
-    }
-
-    private String toSign(String date, String method, String uri, String content) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(date).append("\n")
-                .append(method).append("\n")
-                .append(uri);
-
-        if (content != null) {
-            sb.append("\n").append(content);
-        }
-        String ret = sb.toString();
-        LOG.info("server signing: " + ret);
-        return ret;
     }
 }

@@ -1,6 +1,8 @@
 package io.pivotal.cf.dh;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
 import java.io.UnsupportedEncodingException;
@@ -11,6 +13,8 @@ import java.util.TimeZone;
 
 @Component
 class Util {
+
+    private static final Logger LOG = LogManager.getLogger(Util.class);
 
     //TODO make these configurable
 
@@ -48,5 +52,23 @@ class Util {
         SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
         dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
         return dateFormat.format(calendar.getTime());
+    }
+
+    String signThis(String date, String method, String uri, String content) {
+        StringBuilder sb = new StringBuilder();
+        sb.append(date)
+                .append("\n")
+                .append(method)
+                .append("\n")
+                .append(uri);
+
+        if (content != null) {
+            sb.append("\n")
+                    .append(content);
+        }
+
+        String ret = sb.toString();
+        LOG.debug("sign this: " + ret);
+        return ret;
     }
 }
