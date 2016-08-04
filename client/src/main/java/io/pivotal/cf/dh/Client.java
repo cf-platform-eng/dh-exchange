@@ -1,9 +1,8 @@
 package io.pivotal.cf.dh;
 
+import feign.Response;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -11,7 +10,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.security.GeneralSecurityException;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -47,31 +48,28 @@ class Client {
 //    }
 
     @RequestMapping(value = "/client/quote/{symbol}", method = RequestMethod.GET)
-    public ResponseEntity<Map<String, Object>> quote(@PathVariable String symbol, HttpServletRequest request) throws Exception {
+    public ResponseEntity<Map<String, Object>> quote(@PathVariable String symbol, HttpServletRequest request, HttpServletResponse response) throws Exception {
         if (!alice.hasSecrets()) {
             throw new Exception("key exchange required before making this call.");
         }
 
-        Map<String, Object> m = headerMap(request, "/server/quote/" + symbol, null);
-        return new ResponseEntity<>(serverRepository.getQuote(symbol, m), HttpStatus.OK);
-    }
+        //TODO way to calculate this?
+        String uri = "/server/quote/" + symbol;
+        String method = "GET";
 
-    private Map<String, Object> headerMap(HttpServletRequest request, String uri, String content) throws Exception {
-        Map<String, Object> m = new HashMap<>();
-        m.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8);
+        Map<String, Object> m = util.headerMap(alice, request.getMethod(), uri, null);
 
-        String date = util.currentHttpTime();
-        m.put(HttpHeaders.DATE, date);
+        Response result = serverRepository.getQuote(symbol, m);
+        Map<String, Collection<String>> headers = result.headers();
+        String content = util.toString(result.body().asInputStream());
+        result.close();
 
-        String method = request.getMethod();
+        //validate the response
+        String token = headers.get("Authorization").iterator().next().split(":")[1];
+        String date = headers.get("Date").iterator().next();
 
-        //this returns the uri for the request we were sent, not where we are going to....
-        //String uri = request.getRequestURI();
-        //TODO figure out how to put the uri that the request is going to instead
+        util.validate(alice, token, date, method, uri, content);
 
-        String toSign = util.signThis(date, method, uri, content);
-
-        m.put(HttpHeaders.AUTHORIZATION, alice.getName() + ":" + alice.hmac(toSign));
-        return m;
+        return new ResponseEntity<>(util.toMap(content), HttpStatus.OK);
     }
 }

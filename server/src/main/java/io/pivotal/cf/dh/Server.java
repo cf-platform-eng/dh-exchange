@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -53,13 +54,18 @@ class Server {
 //    }
 
     @RequestMapping(value = "/server/quote/{symbol}", method = RequestMethod.GET)
-    public ResponseEntity<Map<String, Object>> quote(@PathVariable String symbol, HttpServletRequest request) throws Exception {
+    public ResponseEntity<String> quote(@PathVariable String symbol, HttpServletRequest request) throws Exception {
 
         //validate the request
-        validate(request, null);
+        util.validate(getParty(request), request, null);
 
-        return new ResponseEntity<>(quoteRepository.getQuote("select * from yahoo.finance.quotes where symbol = '"
-                + symbol + "'"), HttpStatus.OK);
+        //get the content
+        String content = util.toJson(quoteRepository.getQuote("select * from yahoo.finance.quotes where symbol = '" + symbol + "'"));
+
+        //prep and sign the response
+        HttpHeaders h = util.responseHeaders(getParty(request), request.getMethod(), request.getRequestURI(), content);
+
+        return new ResponseEntity<>(content, h, HttpStatus.OK);
     }
 
     private Party createParty(String name) {
@@ -68,29 +74,12 @@ class Server {
         return p;
     }
 
-    private void validate(HttpServletRequest request, String content) throws GeneralSecurityException {
-        String auth = request.getHeader("Authorization");
-
-        if (auth == null) {
-            throw new GeneralSecurityException("Authorization token missing from request.");
-        }
-
-        String[] s = auth.split(":");
-        Party p = secrets.get(s[0]);
+    private Party getParty(HttpServletRequest request) throws GeneralSecurityException {
+        Party p = secrets.get(util.getName(request));
 
         if (p == null) {
-            throw new GeneralSecurityException("Party not found for name: " + s[0]);
+            throw new GeneralSecurityException("Party not found for name: " + util.getName(request));
         }
-
-        String date = request.getHeader("date");
-        String method = request.getMethod();
-        String uri = request.getRequestURI();
-
-        String signThis = util.signThis(date, method, uri, content);
-        String computedHmac = p.hmac(signThis);
-
-        if (!s[1].equals(computedHmac)) {
-            throw new GeneralSecurityException("Invalid hmac token.");
-        }
+        return p;
     }
 }
