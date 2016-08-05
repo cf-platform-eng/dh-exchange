@@ -7,6 +7,8 @@ import org.springframework.boot.test.SpringApplicationConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 
+import java.security.GeneralSecurityException;
+
 import static junit.framework.TestCase.assertNotNull;
 import static org.junit.Assert.assertEquals;
 
@@ -22,7 +24,7 @@ public class TwoPartyTest {
     private Party bob;
 
     @Test
-    public void testDHExchange() throws Exception {
+    public void testDHExchange() throws GeneralSecurityException {
         //alice = client
         //bob = server
 

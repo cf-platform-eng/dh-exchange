@@ -1,6 +1,5 @@
 package io.pivotal.cf.dh;
 
-import org.apache.commons.codec.binary.Hex;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.crypto.Cipher;
@@ -122,7 +121,7 @@ class Party {
         mac.init(secret);
         byte[] digest = mac.doFinal(s.getBytes());
 
-        return Hex.encodeHexString(digest);
+        return util.fromBytes(digest);
     }
 
     boolean hasSecrets() {

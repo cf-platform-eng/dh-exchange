@@ -2,15 +2,18 @@ package io.pivotal.cf.dh;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import com.google.gson.reflect.TypeToken;
+import feign.Response.Body;
+import org.apache.log4j.Logger;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -18,7 +21,9 @@ import java.util.*;
 @Component
 class Util {
 
-    private static final Logger LOG = LogManager.getLogger(Util.class);
+    private static final Logger LOG = Logger.getLogger(Util.class);
+
+    private static final Class MAP_OF_STRING_OBJECT = new TypeToken<Map<String, Object>>() { }.getType().getClass();
 
     //TODO make these configurable
 
@@ -33,21 +38,20 @@ class Util {
     static final String CIPHER_TYPE = "AES";
     static final int KEY_SIZE = 256;
 
-    String fromUtf8Bytes(byte[] bytes) throws UnsupportedEncodingException {
-        return new String(bytes, "utf-8");
+    String fromUtf8Bytes(byte[] bytes) {
+        return new String(bytes, StandardCharsets.UTF_8);
     }
 
-    byte[] toUtf8Bytes(String s) throws Exception {
-        String base64encodedString = java.util.Base64.getEncoder().encodeToString(s.getBytes("utf-8"));
-        return java.util.Base64.getDecoder().decode(base64encodedString);
+    byte[] toUtf8Bytes(String s) {
+        return s.getBytes(StandardCharsets.UTF_8);
     }
 
     String fromBytes(byte[] bytes) {
-        return new String(Base64.encodeBase64(bytes));
+        return Base64.getEncoder().encodeToString(bytes);
     }
 
     byte[] toBytes(String s) {
-        return Base64.decodeBase64(s);
+        return Base64.getDecoder().decode(s);
     }
 
     //TODO assumes "US"
@@ -111,7 +115,7 @@ class Util {
         }
     }
 
-    String getToken(HttpServletRequest request) throws GeneralSecurityException {
+    private String getToken(HttpServletRequest request) throws GeneralSecurityException {
         return getAuth(request).split(":")[1];
     }
 
@@ -128,32 +132,32 @@ class Util {
         return auth;
     }
 
-    String toString(InputStream inputStream) throws IOException {
+    String toString(Body body) throws GeneralSecurityException {
         StringBuilder sb = new StringBuilder();
-        BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
         String line;
-        try {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(body.asInputStream()))) {
             while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
-        } finally {
-            try {
-                br.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        } catch (IOException e) {
+            throw new GeneralSecurityException(e);
         }
         return sb.toString();
     }
 
-    Map<String, Object> toMap(String json) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        Class c = new HashMap<String, Object>().getClass();
-        return (Map<String, Object>) mapper.readValue(json, c);
+    Map<String, Object> toMap(String json) throws GeneralSecurityException {
+        try {
+            return (Map<String, Object>) new ObjectMapper().readValue(json, MAP_OF_STRING_OBJECT);
+        } catch (IOException e) {
+            throw new GeneralSecurityException(e);
+        }
     }
 
-    String toJson(Object o) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.writeValueAsString(o);
+    String toJson(Object o) throws GeneralSecurityException {
+        try {
+            return new ObjectMapper().writeValueAsString(o);
+        } catch (JsonProcessingException e) {
+            throw new GeneralSecurityException(e);
+        }
     }
 }

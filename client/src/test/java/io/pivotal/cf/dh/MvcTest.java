@@ -1,5 +1,6 @@
 package io.pivotal.cf.dh;
 
+import org.apache.log4j.Logger;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -23,6 +24,8 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 @WebAppConfiguration
 public class MvcTest {
 
+    private static final Logger LOG = Logger.getLogger(MvcTest.class);
+
     private MockMvc mockMvc;
 
     @Autowired
@@ -40,5 +43,14 @@ public class MvcTest {
 
         String clientKey = result.getResponse().getContentAsString();
         assertNotNull(clientKey);
+    }
+
+    @Test
+    public void testLogging() {
+        LOG.debug("debug");
+        LOG.info("info");
+        LOG.warn("warn");
+        LOG.error("error");
+        LOG.fatal("aaaaaaagh");
     }
 }

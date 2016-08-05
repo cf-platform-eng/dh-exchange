@@ -29,7 +29,7 @@ class Client {
     private ServerRepository serverRepository;
 
     @RequestMapping(value = "/client/pubKey", method = RequestMethod.GET)
-    public ResponseEntity<Map<String, String>> pubKey() throws Exception {
+    public ResponseEntity<Map<String, String>> pubKey() throws GeneralSecurityException {
         Map<String, String> m = new HashMap<>();
         m.put(alice.getName(), util.fromBytes(alice.getPublicKey()));
         return new ResponseEntity<>(m, HttpStatus.OK);
@@ -48,9 +48,9 @@ class Client {
 //    }
 
     @RequestMapping(value = "/client/quote/{symbol}", method = RequestMethod.GET)
-    public ResponseEntity<Map<String, Object>> quote(@PathVariable String symbol, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    public ResponseEntity<Map<String, Object>> quote(@PathVariable String symbol, HttpServletRequest request, HttpServletResponse response) throws GeneralSecurityException {
         if (!alice.hasSecrets()) {
-            throw new Exception("key exchange required before making this call.");
+            throw new GeneralSecurityException("key exchange required before making this call.");
         }
 
         //TODO way to calculate this?
@@ -61,7 +61,7 @@ class Client {
 
         Response result = serverRepository.getQuote(symbol, m);
         Map<String, Collection<String>> headers = result.headers();
-        String content = util.toString(result.body().asInputStream());
+        String content = util.toString(result.body());
         result.close();
 
         //validate the response

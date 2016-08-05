@@ -1,7 +1,6 @@
 package io.pivotal.cf.dh;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.apache.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.http.HttpHeaders;
@@ -17,7 +16,7 @@ import java.util.Map;
 @RestController
 class Server {
 
-    private static final Logger LOG = LogManager.getLogger(Server.class);
+    private static final Logger LOG = Logger.getLogger(Server.class);
 
     private final Map<String, Party> secrets = new HashMap<>();
 
@@ -54,7 +53,7 @@ class Server {
 //    }
 
     @RequestMapping(value = "/server/quote/{symbol}", method = RequestMethod.GET)
-    public ResponseEntity<String> quote(@PathVariable String symbol, HttpServletRequest request) throws Exception {
+    public ResponseEntity<String> quote(@PathVariable String symbol, HttpServletRequest request) throws GeneralSecurityException {
 
         //validate the request
         util.validate(getParty(request), request, null);
