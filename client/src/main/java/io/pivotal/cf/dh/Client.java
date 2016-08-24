@@ -57,7 +57,7 @@ class Client {
         String uri = "/server/quote/" + symbol;
         String method = "GET";
 
-        Map<String, Object> m = util.headerMap(alice, request.getMethod(), uri, null);
+        Map<String, Object> m = util.headerMap(alice, alice, request.getMethod(), uri, null);
 
         Response result = serverRepository.getQuote(symbol, m);
         Map<String, Collection<String>> headers = result.headers();

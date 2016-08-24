@@ -8,10 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
-import java.security.InvalidAlgorithmParameterException;
-import java.security.KeyFactory;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
 
 @Configuration
 class Config extends WebMvcConfigurerAdapter {
@@ -43,5 +40,10 @@ class Config extends WebMvcConfigurerAdapter {
                 .decoder(new GsonDecoder())
                 .target(QuoteRepository.class,
                         "https://query.yahooapis.com/v1/public");
+    }
+
+    @Bean
+    Party bob() throws NoSuchAlgorithmException, InvalidKeyException {
+        return new Party("bob");
     }
 }

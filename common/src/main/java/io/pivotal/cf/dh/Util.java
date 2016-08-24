@@ -72,7 +72,7 @@ class Util {
         return ret;
     }
 
-    Map<String, Object> headerMap(Party party, String method, String uri, String content) throws GeneralSecurityException {
+    Map<String, Object> headerMap(Party signor, Party signee, String method, String uri, String content) throws GeneralSecurityException {
         Map<String, Object> m = new HashMap<>();
         m.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_UTF8);
 
@@ -81,13 +81,13 @@ class Util {
 
         String toSign = signThis(date, method, uri, content);
 
-        m.put(HttpHeaders.AUTHORIZATION, party.getName() + ":" + party.hmac(toSign));
+        m.put(HttpHeaders.AUTHORIZATION, signee.getName() + ":" + signor.hmac(toSign));
         return m;
     }
 
-    HttpHeaders responseHeaders(Party party, String method, String uri, String content) throws GeneralSecurityException {
+    HttpHeaders responseHeaders(Party signor, Party signee, String method, String uri, String content) throws GeneralSecurityException {
         HttpHeaders h = new HttpHeaders();
-        Map<String, Object> hm = headerMap(party, method, uri, content);
+        Map<String, Object> hm = headerMap(signor, signee, method, uri, content);
         for (String s : hm.keySet()) {
             h.set(s, hm.get(s).toString());
         }

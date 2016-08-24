@@ -29,6 +29,9 @@ class Server {
     @Autowired
     private AutowireCapableBeanFactory beanFactory;
 
+    @Autowired
+    private Party bob;
+
     @RequestMapping(value = "/server/pubKey", method = RequestMethod.GET)
     public ResponseEntity<Map<String, String>> pubKey(@RequestParam(value = "name") String name, @RequestParam(value = "pubKey") String pubKey) throws GeneralSecurityException {
 
@@ -59,7 +62,7 @@ class Server {
         String content = util.toJson(quoteRepository.getQuote("select * from yahoo.finance.quotes where symbol = '" + symbol + "'"));
 
         //prep and sign the response
-        HttpHeaders h = util.responseHeaders(getParty(util.getName(request)), request.getMethod(), request.getRequestURI(), content);
+        HttpHeaders h = util.responseHeaders(getParty(util.getName(request)), bob, request.getMethod(), request.getRequestURI(), content);
 
         return new ResponseEntity<>(content, h, HttpStatus.OK);
     }
