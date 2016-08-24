@@ -48,7 +48,7 @@ class Client {
 //    }
 
     @RequestMapping(value = "/client/quote/{symbol}", method = RequestMethod.GET)
-    public ResponseEntity<Map<String, Object>> quote(@PathVariable String symbol, HttpServletRequest request, HttpServletResponse response) throws GeneralSecurityException {
+    public ResponseEntity<Object> quote(@PathVariable String symbol, HttpServletRequest request, HttpServletResponse response) throws GeneralSecurityException {
         if (!alice.hasSecrets()) {
             throw new GeneralSecurityException("key exchange required before making this call.");
         }
@@ -70,6 +70,6 @@ class Client {
 
         util.validate(alice, token, date, method, uri, content);
 
-        return new ResponseEntity<>(util.toMap(content), HttpStatus.OK);
+        return new ResponseEntity<>(util.toObject(content), HttpStatus.OK);
     }
 }

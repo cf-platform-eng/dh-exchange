@@ -2,7 +2,6 @@ package io.pivotal.cf.dh;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.reflect.TypeToken;
 import feign.Response.Body;
 import org.apache.log4j.Logger;
 import org.springframework.http.HttpHeaders;
@@ -22,8 +21,6 @@ import java.util.*;
 class Util {
 
     private static final Logger LOG = Logger.getLogger(Util.class);
-
-    private static final Class MAP_OF_STRING_OBJECT = new TypeToken<Map<String, Object>>() { }.getType().getClass();
 
     //TODO make these configurable
 
@@ -97,15 +94,6 @@ class Util {
         return h;
     }
 
-    void validate(Party party, HttpServletRequest request, String content) throws GeneralSecurityException {
-        String token = getToken(request);
-        String date = request.getHeader("date");
-        String method = request.getMethod();
-        String uri = request.getRequestURI();
-
-        validate(party, token, date, method, uri, content);
-    }
-
     void validate(Party party, String token, String date, String method, String uri, String content) throws GeneralSecurityException {
         String signThis = signThis(date, method, uri, content);
         String computedHmac = party.hmac(signThis);
@@ -115,15 +103,11 @@ class Util {
         }
     }
 
-    private String getToken(HttpServletRequest request) throws GeneralSecurityException {
-        return getAuth(request).split(":")[1];
-    }
-
     String getName(HttpServletRequest request) throws GeneralSecurityException {
         return getAuth(request).split(":")[0];
     }
 
-    private String getAuth(HttpServletRequest request) throws GeneralSecurityException {
+    String getAuth(HttpServletRequest request) throws GeneralSecurityException {
         String auth = request.getHeader("Authorization");
 
         if (auth == null) {
@@ -145,9 +129,9 @@ class Util {
         return sb.toString();
     }
 
-    Map<String, Object> toMap(String json) throws GeneralSecurityException {
+    Object toObject(String json) throws GeneralSecurityException {
         try {
-            return (Map<String, Object>) new ObjectMapper().readValue(json, MAP_OF_STRING_OBJECT);
+            return new ObjectMapper().readValue(json, Object.class);
         } catch (IOException e) {
             throw new GeneralSecurityException(e);
         }

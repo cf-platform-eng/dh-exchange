@@ -55,14 +55,11 @@ class Server {
     @RequestMapping(value = "/server/quote/{symbol}", method = RequestMethod.GET)
     public ResponseEntity<String> quote(@PathVariable String symbol, HttpServletRequest request) throws GeneralSecurityException {
 
-        //validate the request
-        util.validate(getParty(request), request, null);
-
         //get the content
         String content = util.toJson(quoteRepository.getQuote("select * from yahoo.finance.quotes where symbol = '" + symbol + "'"));
 
         //prep and sign the response
-        HttpHeaders h = util.responseHeaders(getParty(request), request.getMethod(), request.getRequestURI(), content);
+        HttpHeaders h = util.responseHeaders(getParty(util.getName(request)), request.getMethod(), request.getRequestURI(), content);
 
         return new ResponseEntity<>(content, h, HttpStatus.OK);
     }
@@ -73,12 +70,7 @@ class Server {
         return p;
     }
 
-    private Party getParty(HttpServletRequest request) throws GeneralSecurityException {
-        Party p = secrets.get(util.getName(request));
-
-        if (p == null) {
-            throw new GeneralSecurityException("Party not found for name: " + util.getName(request));
-        }
-        return p;
+    Party getParty(String name) {
+        return secrets.get(name);
     }
 }
