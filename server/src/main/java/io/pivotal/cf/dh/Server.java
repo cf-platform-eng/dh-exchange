@@ -45,7 +45,7 @@ class Server {
         secrets.put(name, p);
 
         Map<String, String> m = new HashMap<>();
-        m.put("server", pPubKey);
+        m.put(bob.getName(), pPubKey);
 
         return new ResponseEntity<>(m, HttpStatus.CREATED);
     }
@@ -62,7 +62,7 @@ class Server {
         String content = util.toJson(quoteRepository.getQuote("select * from yahoo.finance.quotes where symbol = '" + symbol + "'"));
 
         //prep and sign the response
-        HttpHeaders h = util.responseHeaders(getParty(util.getName(request)), bob, request.getMethod(), request.getRequestURI(), content);
+        HttpHeaders h = util.responseHeaders(bob, getParty(util.getName(request)), request.getMethod(), request.getRequestURI(), content);
 
         return new ResponseEntity<>(content, h, HttpStatus.OK);
     }

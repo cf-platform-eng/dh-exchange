@@ -107,7 +107,11 @@ class Util {
         return getAuth(request).split(":")[0];
     }
 
-    String getAuth(HttpServletRequest request) throws GeneralSecurityException {
+    String getToken(HttpServletRequest request) throws GeneralSecurityException {
+        return getAuth(request).split(":")[1];
+    }
+
+    private String getAuth(HttpServletRequest request) throws GeneralSecurityException {
         String auth = request.getHeader("Authorization");
 
         if (auth == null) {

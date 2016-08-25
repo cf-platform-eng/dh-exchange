@@ -2,24 +2,24 @@ package io.pivotal.cf.dh;
 
 import feign.Feign;
 import feign.gson.GsonDecoder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
 import java.security.*;
 
 @Configuration
-class Config extends WebMvcConfigurerAdapter {
+@EnableWebSecurity
+class Config extends WebSecurityConfigurerAdapter {
 
     @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(hmacInterceptor).addPathPatterns("/server/quote/**");
-    }
+    protected void configure(HttpSecurity http) throws Exception {
 
-    @Autowired
-    private HmacInterceptor hmacInterceptor;
+        http.authorizeRequests()
+                .antMatchers("/server/quote/**").access("@webSecurity.authenticate(authentication,request)");
+    }
 
     @Bean
     public KeyPairGenerator keyPairGenerator() throws NoSuchAlgorithmException, InvalidAlgorithmParameterException {

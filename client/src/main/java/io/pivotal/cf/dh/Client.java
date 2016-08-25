@@ -60,6 +60,11 @@ class Client {
         Map<String, Object> m = util.headerMap(alice, alice, request.getMethod(), uri, null);
 
         Response result = serverRepository.getQuote(symbol, m);
+
+        if(HttpStatus.OK.value() != result.status()) {
+            throw new GeneralSecurityException("Hmac authorization failed.");
+        }
+
         Map<String, Collection<String>> headers = result.headers();
         String content = util.toString(result.body());
         result.close();
