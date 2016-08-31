@@ -6,6 +6,7 @@ import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.annotation.Secured;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
@@ -55,6 +56,7 @@ class Server {
 //        return new ResponseEntity<>(bob.encrypt(message), HttpStatus.OK);
 //    }
 
+    @Secured("ROLE_USER")
     @RequestMapping(value = "/server/quote/{symbol}", method = RequestMethod.GET)
     public ResponseEntity<String> quote(@PathVariable String symbol, HttpServletRequest request) throws GeneralSecurityException {
 

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import javax.servlet.http.HttpServletRequest;
 import java.security.GeneralSecurityException;
 
-@Component
+//@Component
 class WebSecurity {
 
     private static final Logger LOG = Logger.getLogger(WebSecurity.class);
