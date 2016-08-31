@@ -95,8 +95,11 @@ class Util {
     }
 
     void validate(Party party, String token, String date, String method, String uri, String content) throws GeneralSecurityException {
-        String signThis = signThis(date, method, uri, content);
-        String computedHmac = party.hmac(signThis);
+        validate(party, token, signThis(date, method, uri, content));
+    }
+
+    void validate(Party party, String token, String signature) throws GeneralSecurityException {
+        String computedHmac = party.hmac(signature);
 
         if (!token.equals(computedHmac)) {
             throw new GeneralSecurityException("Invalid hmac token.");
@@ -104,11 +107,19 @@ class Util {
     }
 
     String getName(HttpServletRequest request) throws GeneralSecurityException {
-        return getAuth(request).split(":")[0];
+        return getTokenPart(request, 0);
     }
 
     String getToken(HttpServletRequest request) throws GeneralSecurityException {
-        return getAuth(request).split(":")[1];
+        return getTokenPart(request, 1);
+    }
+
+    private String getTokenPart(HttpServletRequest request, int index) throws GeneralSecurityException {
+        String s = getAuth(request);
+        if(s.contains(":")) {
+            return s.split(":")[index];
+        }
+        return "";
     }
 
     private String getAuth(HttpServletRequest request) throws GeneralSecurityException {
